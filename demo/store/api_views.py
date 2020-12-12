@@ -1,14 +1,17 @@
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
+from django.core.cache import cache
 from store.models import Product
 from store.serializers import ProductSerializer
 
 class ProductsPagination(LimitOffsetPagination):
     default_limit = 10
     max_limit = 100
+
 
 class ProductList(ListAPIView):
     queryset = Product.objects.all()
@@ -31,4 +34,51 @@ class ProductList(ListAPIView):
                 )
         return queryset
 
-        
+
+class ProductCreate(CreateAPIView):
+    serializer_class = ProductSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            price = request.data.get('price')
+            if price is not None and float(price) <= 0.0:
+                raise ValidationError({'price' : 'Must be above $0.00'})
+        except ValueError:
+            raise ValidationError({'price' : 'A valid number is required'})
+        return super().create(request, *args, **kwargs)
+
+
+class ProductDestroy(DestroyAPIView):
+    queryset = Product.objects.all()
+    lookup_field = 'id'
+
+    def delete(self, request, *args, **kwargs):
+        product_id = request.data.get('id')
+        response = super().delete(request, *args, **kwargs)
+        if response.status_code == 204:
+            cache.delete('product_data_{}'.format(product_id))
+        return response
+
+
+class ProductRetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
+    queryset = Product.objects.all()
+    lookup_field = 'id'
+    serializer_class = ProductSerializer
+
+    def delete(self, request, *args, **kwargs):
+        product_id = request.data.get('id')
+        response = super().delete(request, *args, **kwargs)
+        if response.status_code == 204:
+            cache.delete('product_data_{}'.format(product_id))
+        return response
+
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        if response.status_code == 200:
+            product = response.data
+            cache.set('product_data_{}'.format(product['id']), {
+                'name' : product['name'],
+                'description' : product['description'],
+                'price' : product['price']
+            })
+        return response
