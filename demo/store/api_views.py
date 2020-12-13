@@ -1,12 +1,13 @@
-from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, RetrieveUpdateDestroyAPIView, GenericAPIView
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.core.cache import cache
 from store.models import Product
-from store.serializers import ProductSerializer
+from store.serializers import ProductSerializer, ProductStatSerializer
 
 class ProductsPagination(LimitOffsetPagination):
     default_limit = 10
@@ -82,3 +83,19 @@ class ProductRetrieveUpdateDestroy(RetrieveUpdateDestroyAPIView):
                 'price' : product['price']
             })
         return response
+
+
+class ProductStats(GenericAPIView):
+    queryset = Product.objects.all()
+    lookup_field = 'id'
+    serializer_class = ProductStatSerializer
+
+    def get(self, request, format=None, id=None):
+        obj = self.get_object()
+        serializer = ProductStatSerializer({
+            'stats' : {
+                '2020-12-12' : [5, 10, 15],
+                '2020-12-13' : [10, 1, 1]
+            }
+        })
+        return Response(serializer.data)

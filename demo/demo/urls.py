@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/v1/products/new/', store.api_views.ProductCreate.as_view()),
     path('api/v1/products/<int:id>/destroy/', store.api_views.ProductDestroy.as_view()),
     path('api/v1/products/<int:id>/', store.api_views.ProductRetrieveUpdateDestroy.as_view()),
+    path('api/v1/products/<int:id>/stats/', store.api_views.ProductStats.as_view()),
     path('products/<int:id>/', store.views.show, name='show-product'),
     path('cart/', store.views.cart, name='shopping-cart'),
     path('', store.views.index, name='list-products'),
