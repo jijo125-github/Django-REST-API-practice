@@ -1,0 +1,9 @@
+Django Rest Framework has four types of API test cases:
+    --> APISimpleTestCase
+    --> APITransactionTestCase
+    --> APITestCase
+    --> APILiveServerTestCase
+
+Keeping note here to learn in future:
+    --> Designing Restful API
+    --> React: Working with APIs
